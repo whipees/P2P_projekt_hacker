@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 
-namespace P2PBankNode.Config
+namespace P2P_projekt.Config
 {
     public static class AppConfig
     {

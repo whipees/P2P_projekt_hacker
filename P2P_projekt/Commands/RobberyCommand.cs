@@ -2,10 +2,11 @@
 using System.Linq;
 using System.Threading.Tasks;
 using P2P_projekt.Config;
-using P2PBankNode.Config;
-using P2PBankNode.Network;
+using P2P_projekt.Network;
+using P2P_projekt.Core;
 
-namespace P2PBankNode.Commands
+
+namespace P2P_projekt.Commands
 {
     public class RobberyCommand : ICommand
     {

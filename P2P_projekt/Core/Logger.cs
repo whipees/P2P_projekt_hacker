@@ -1,7 +1,7 @@
 ﻿
 using System.IO;
 
-namespace P2PBankNode.Core
+namespace P2P_projekt.Core
 {
     public sealed class Logger
     {

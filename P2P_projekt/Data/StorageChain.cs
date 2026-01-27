@@ -1,9 +1,8 @@
 ﻿using P2P_projekt.Core;
-using P2PBankNode.Core;
 using System.IO;
 using System.Text.Json;
 
-namespace P2PBankNode.Data
+namespace P2P_projekt.Data
 {
     public class StorageChain : IStorage
     {
