@@ -12,32 +12,38 @@ namespace P2P_projekt.Commands
     {
         public static ICommand Parse(string input)
         {
-            if (string.IsNullOrWhiteSpace(input)) return new ErrorCommand("Empty command");
-
-            string[] parts = input.Trim().Split(' ');
-            string code = parts[0].ToUpper();
+            // Základní ošetření prázdného vstupu
+            if (string.IsNullOrWhiteSpace(input))
+                return new ErrorCommand("Prázdný příkaz");
 
             try
             {
+                string[] parts = input.Trim().Split(' ');
+                if (parts.Length == 0) return new ErrorCommand("Neplatný formát");
+
+                string code = parts[0].ToUpper();
+
+                // Ošetření neexistujících příkazů
                 switch (code)
                 {
                     case "BC": return new BankCodeCommand();
                     case "AC": return new AccountCreateCommand();
                     case "BA": return new BankInfoCommand(true);
                     case "BN": return new BankInfoCommand(false);
-                    case "RP": return new RobberyCommand(parts); // Person B implements RobberyCommand class later
+                    case "RP": return new RobberyCommand(parts);
                     case "AD":
                     case "AW":
                     case "AB":
                     case "AR":
                         return HandleTransaction(code, parts, input);
                     default:
-                        return new ErrorCommand("Unknown command");
+                        return new ErrorCommand($"Neznámý příkaz: {code}");
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                return new ErrorCommand("Invalid format");
+                // Kdyby cokoliv selhalo při parsování, vrátíme ER
+                return new ErrorCommand($"Chyba formátu příkazu: {ex.Message}");
             }
         }
 
