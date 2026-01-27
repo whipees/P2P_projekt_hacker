@@ -1,14 +1,43 @@
 ﻿<Window x:Class="P2PBankNode.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="P2P Bank Monitor" Height="250" Width="400">
+        Title="P2P Bank Node Monitor" Height="300" Width="500"
+        Background="#F0F0F0" ResizeMode="CanMinimize">
     <Grid>
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="Bank Node Status: RUNNING" Foreground="Green" FontWeight="Bold" HorizontalAlignment="Center" Margin="10"/>
-            <TextBlock x:Name="TxtIp" Text="IP: Loading..." HorizontalAlignment="Center"/>
-            <TextBlock x:Name="TxtFunds" Text="Total Funds: $0" FontSize="20" Margin="10" HorizontalAlignment="Center"/>
-            <TextBlock x:Name="TxtClients" Text="Clients: 0" FontSize="16" HorizontalAlignment="Center"/>
-            <Button Content="Shutdown Node" Background="Red" Foreground="White" Click="BtnStop_Click" Margin="20" Padding="10"/>
-        </StackPanel>
+        <Border Background="White" Margin="20" CornerRadius="10" Padding="20">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" Opacity="0.2"/>
+            </Border.Effect>
+
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="BANK NODE STATUS" Foreground="#555" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
+                <TextBlock Text="● ONLINE" Foreground="Green" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,20"/>
+
+                <Grid Margin="0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                        <TextBlock Text="Total Funds" Foreground="Gray"/>
+                        <TextBlock x:Name="TxtFunds" Text="$0" FontSize="24" FontWeight="SemiBold" Foreground="#333"/>
+                    </StackPanel>
+
+                    <Rectangle Grid.Column="1" Width="1" Fill="#DDD" Margin="10,0"/>
+
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                        <TextBlock Text="Active Clients" Foreground="Gray"/>
+                        <TextBlock x:Name="TxtClients" Text="0" FontSize="24" FontWeight="SemiBold" Foreground="#333"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock x:Name="TxtIp" Text="IP: Checking..." HorizontalAlignment="Center" Margin="0,20,0,5" Foreground="Gray"/>
+
+                <Button x:Name="BtnStop" Content="SAFE SHUTDOWN" Background="#D32F2F" Foreground="White" 
+                        Padding="10,8" Margin="0,15,0,0" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>
