@@ -1,12 +1,14 @@
-﻿<Window x:Class="P2P_projekt.MainWindow"
+﻿<Window x:Class="P2PBankNode.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:P2P_projekt"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="P2P Bank Monitor" Height="250" Width="400">
     <Grid>
-
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="Bank Node Status: RUNNING" Foreground="Green" FontWeight="Bold" HorizontalAlignment="Center" Margin="10"/>
+            <TextBlock x:Name="TxtIp" Text="IP: Loading..." HorizontalAlignment="Center"/>
+            <TextBlock x:Name="TxtFunds" Text="Total Funds: $0" FontSize="20" Margin="10" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="TxtClients" Text="Clients: 0" FontSize="16" HorizontalAlignment="Center"/>
+            <Button Content="Shutdown Node" Background="Red" Foreground="White" Click="BtnStop_Click" Margin="20" Padding="10"/>
+        </StackPanel>
     </Grid>
 </Window>
