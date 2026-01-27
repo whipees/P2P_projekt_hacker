@@ -1,13 +1,15 @@
-﻿using P2P_projekt.Core;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using P2P_projekt.Core;
 
 namespace P2P_projekt.Data
 {
     public class StorageChain : IStorage
     {
         private const string JsonFile = "bank_data.json";
-        private const string CsvFile = "bank_data.csv";
+        private const string BackupFile = "bank_data.bak";
 
         public Dictionary<int, long> Load()
         {
@@ -21,7 +23,7 @@ namespace P2P_projekt.Data
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error($"JSON Load failed: {ex.Message}");
+                Logger.Instance.Error($"Persistence load failed: {ex.Message}");
             }
             return new Dictionary<int, long>();
         }
@@ -38,29 +40,26 @@ namespace P2P_projekt.Data
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error($"Primary Storage Failed: {ex.Message}");
+                Logger.Instance.Error($"Primary storage failed: {ex.Message}");
             }
 
             if (!saved)
             {
                 try
                 {
-                    using StreamWriter sw = new StreamWriter(CsvFile);
-                    foreach (var kvp in accounts)
-                    {
-                        sw.WriteLine($"{kvp.Key},{kvp.Value}");
-                    }
+                    string json = JsonSerializer.Serialize(accounts);
+                    File.WriteAllText(BackupFile, json);
                     saved = true;
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Error($"Secondary Storage Failed: {ex.Message}");
+                    Logger.Instance.Error($"Backup storage failed: {ex.Message}");
                 }
             }
 
             if (!saved)
             {
-                Logger.Instance.Error("CRITICAL: Running in Memory-Only mode.");
+                Logger.Instance.Error("CRITICAL: Data held in memory only.");
             }
         }
     }
