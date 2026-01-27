@@ -1,35 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace P2P_projekt.Config
+namespace P2PBankNode.Config
 {
     public static class AppConfig
     {
-        public static string IpAddress { get; } = GetLocalIp();
+        public static string IpAddress { get; private set; } = GetLocalIp();
         public static int Port { get; set; } = 65530;
         public static int Timeout { get; set; } = 5000;
+        public static string Language { get; set; } = "EN";
 
         private static string GetLocalIp()
         {
-            try
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
             {
-                using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0);
-                socket.Connect("8.8.8.8", 65530);
-                if (socket.LocalEndPoint is IPEndPoint endPoint)
-                {
-                    return endPoint.Address.ToString();
-                }
-                return "127.0.0.1";
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                    return ip.ToString();
             }
-            catch
-            {
-                return "127.0.0.1";
-            }
+            return "127.0.0.1";
         }
     }
 }
