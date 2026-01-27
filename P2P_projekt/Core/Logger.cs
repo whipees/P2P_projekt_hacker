@@ -1,7 +1,7 @@
-﻿
+﻿using System;
 using System.IO;
 
-namespace P2PBankNode.Core
+namespace P2P_projekt.Core
 {
     public sealed class Logger
     {
@@ -9,6 +9,8 @@ namespace P2PBankNode.Core
         public static Logger Instance => _lazy.Value;
         private readonly object _lock = new();
         private const string LogFile = "bank_node.log";
+
+        private Logger() { }
 
         public void Log(string message)
         {

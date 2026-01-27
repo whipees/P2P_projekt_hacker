@@ -1,59 +1,83 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using P2P_projekt.Core;
+using P2P_projekt.Network;
 using P2P_projekt.Config;
-using P2PBankNode.Config;
-using P2PBankNode.Network;
 
-namespace P2PBankNode.Commands
+namespace P2P_projekt.Commands
 {
     public class RobberyCommand : ICommand
     {
-        private readonly long _target;
+        private readonly long _targetAmount;
 
         public RobberyCommand(string[] parts)
         {
-            if (parts.Length < 2) throw new System.Exception("Target needed");
-            _target = long.Parse(parts[1]);
+            if (parts.Length < 2) throw new ArgumentException("Missing target amount");
+            if (!long.TryParse(parts[1], out _targetAmount)) throw new ArgumentException("Invalid amount format");
         }
 
         public string Execute()
         {
-            var potentialVictims = new List<string> { AppConfig.IpAddress, "127.0.0.1" };
+            var potentialTargets = GenerateIpRange();
+            var victims = new List<(string Ip, long Funds, int Clients)>();
 
-            var results = new List<(string Ip, long Money, int Clients)>();
-
-            foreach (var ip in potentialVictims)
+            foreach (var ip in potentialTargets)
             {
                 try
                 {
-                    string ba = NetworkClient.SendRequest(ip, AppConfig.Port, "BA");
-                    string bn = NetworkClient.SendRequest(ip, AppConfig.Port, "BN");
+                    string rawBa = NetworkClient.SendRequest(ip, AppConfig.Port, "BA");
+                    string rawBn = NetworkClient.SendRequest(ip, AppConfig.Port, "BN");
 
-                    if (ba.StartsWith("BA") && bn.StartsWith("BN"))
+                    if (ParseResponse(rawBa, "BA", out long funds) && ParseResponse(rawBn, "BN", out long clients))
                     {
-                        long money = long.Parse(ba.Split(' ')[1]);
-                        int clients = int.Parse(bn.Split(' ')[1]);
-                        results.Add((ip, money, clients));
+                        victims.Add((ip, funds, (int)clients));
                     }
                 }
-                catch { }
+                catch
+                {
+                    // Node unreachable, skip
+                }
             }
 
-            var sorted = results.OrderByDescending(x => x.Money).ToList();
-            long stolen = 0;
-            int victims = 0;
-            var targets = new List<string>();
+            var sortedVictims = victims.OrderByDescending(v => v.Funds).ToList();
 
-            foreach (var node in sorted)
+            long currentSum = 0;
+            int totalAffectedClients = 0;
+            var targetIps = new List<string>();
+
+            foreach (var victim in sortedVictims)
             {
-                if (stolen >= _target) break;
-                stolen += node.Money;
-                victims += node.Clients;
-                targets.Add(node.Ip);
+                if (currentSum >= _targetAmount) break;
+
+                currentSum += victim.Funds;
+                totalAffectedClients += victim.Clients;
+                targetIps.Add(victim.Ip);
             }
 
-            return $"RP To get {_target}, rob: {string.Join(", ", targets)}. Total victims: {victims}";
+            if (currentSum == 0) return "RP Network poor, robbery impossible.";
+
+            string ipList = string.Join(", ", targetIps);
+            return $"RP To reach {_targetAmount} (found {currentSum}), rob banks: {ipList}. Total victims: {totalAffectedClients}.";
+        }
+
+        private bool ParseResponse(string response, string prefix, out long value)
+        {
+            value = 0;
+            if (string.IsNullOrEmpty(response) || !response.StartsWith(prefix)) return false;
+
+            var parts = response.Split(' ');
+            return parts.Length > 1 && long.TryParse(parts[1], out value);
+        }
+
+        private List<string> GenerateIpRange()
+        {
+            // For classroom demo purposes, we scan localhost and a few potential peers
+            return new List<string>
+            {
+                "127.0.0.1",
+                AppConfig.IpAddress
+            };
         }
     }
 }
