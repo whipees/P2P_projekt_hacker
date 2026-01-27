@@ -11,7 +11,6 @@
   <ItemGroup>
     <Folder Include="Data\" />
     <Folder Include="Network\" />
-    <Folder Include="Commands\" />
   </ItemGroup>
 
 </Project>
