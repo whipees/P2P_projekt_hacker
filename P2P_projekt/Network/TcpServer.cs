@@ -24,7 +24,7 @@ namespace P2P_projekt.Network
                 // Nasloucháme na všech IP adresách
                 _listener = new TcpListener(IPAddress.Any, AppConfig.Port);
                 _listener.Start();
-
+                BankEngine.Instance.SetStatus(true);
                 Logger.Instance.Log($"SERVER START: Naslouchám na portu {AppConfig.Port}");
 
                 // Spustíme hlavní naslouchací smyčku
@@ -42,6 +42,7 @@ namespace P2P_projekt.Network
             {
                 _cts?.Cancel();
                 _listener?.Stop();
+                BankEngine.Instance.SetStatus(false);
                 Logger.Instance.Log("SERVER STOP: Server byl bezpečně ukončen.");
             }
             catch { /* Ignorovat chyby při vypínání */ }
