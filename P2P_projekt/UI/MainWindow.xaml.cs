@@ -4,7 +4,6 @@ using System.Windows.Media;
 using P2P_projekt.Core;
 using P2P_projekt.Network;
 using P2P_projekt.Config;
-
 namespace P2P_projekt
 {
     public partial class MainWindow : Window, IBankObserver
@@ -17,11 +16,11 @@ namespace P2P_projekt
 
             try
             {
-                TxtIp.Text = $"{Localization.Get("Ip")}: {AppConfig.IpAddress} | Port: {AppConfig.Port}";
-                RefreshTexts();
+                AppConfig.Initialize();
 
+                RefreshTexts();
                 BankEngine.Instance.Attach(this);
-                // Initial update
+
                 Update(BankEngine.Instance.GetTotalFunds(), BankEngine.Instance.GetClientCount());
 
                 _server = new TcpServer();
@@ -37,41 +36,36 @@ namespace P2P_projekt
         {
             Dispatcher.Invoke(() =>
             {
-                // Update Numbers
                 TxtFunds.Text = $"${totalFunds}";
                 TxtClients.Text = totalClients.ToString();
 
-                // Update Status Indicator based on Engine State
                 bool isOnline = BankEngine.Instance.IsOnline;
                 if (isOnline)
                 {
-                    TxtStatus.Text = "● " + Localization.Get("StatusOnline");
-                    TxtStatus.Foreground = new SolidColorBrush(Color.FromRgb(46, 125, 50)); // Green
-                    StatusBorder.Background = new SolidColorBrush(Color.FromRgb(232, 245, 233)); // Light Green
+                    TxtStatus.Text = "● " + P2P_projekt.Core.Localization.Get("StatusOnline");
+                    TxtStatus.Foreground = new SolidColorBrush(Color.FromRgb(46, 125, 50)); // Zelená
                 }
                 else
                 {
-                    TxtStatus.Text = "● " + Localization.Get("StatusOffline");
-                    TxtStatus.Foreground = new SolidColorBrush(Color.FromRgb(198, 40, 40)); // Red
-                    StatusBorder.Background = new SolidColorBrush(Color.FromRgb(255, 235, 238)); // Light Red
+                    TxtStatus.Text = "● " + P2P_projekt.Core.Localization.Get("StatusOffline");
+                    TxtStatus.Foreground = new SolidColorBrush(Color.FromRgb(198, 40, 40)); // Červená
                 }
             });
         }
 
         private void BtnLang_Click(object sender, RoutedEventArgs e)
         {
-            Localization.ToggleLanguage();
+            P2P_projekt.Core.Localization.ToggleLanguage();
             RefreshTexts();
-            // Trigger update to refresh status text
             Update(BankEngine.Instance.GetTotalFunds(), BankEngine.Instance.GetClientCount());
         }
 
         private void RefreshTexts()
         {
-            LblFunds.Text = Localization.Get("Funds");
-            LblClients.Text = Localization.Get("Clients");
-            BtnStop.Content = Localization.Get("Shutdown");
-            TxtIp.Text = $"{Localization.Get("Ip")}: {AppConfig.IpAddress} | Port: {AppConfig.Port}";
+            TxtIp.Text = $"{P2P_projekt.Core.Localization.Get("Ip")}: {AppConfig.Settings.IpAddress} | Port: {AppConfig.Settings.Port}";
+            LblFunds.Text = P2P_projekt.Core.Localization.Get("Funds");
+            LblClients.Text = P2P_projekt.Core.Localization.Get("Clients");
+            BtnStop.Content = P2P_projekt.Core.Localization.Get("Shutdown");
         }
 
         private void BtnStop_Click(object sender, RoutedEventArgs e)

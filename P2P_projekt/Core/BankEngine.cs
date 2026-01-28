@@ -15,7 +15,7 @@ namespace P2P_projekt.Core
         private readonly List<IBankObserver> _observers = new();
         private readonly IStorage _storage;
 
-        public bool IsOnline { get; set; } = false; // Pro Status v UI
+        public bool IsOnline { get; set; } = false;
 
         private BankEngine()
         {

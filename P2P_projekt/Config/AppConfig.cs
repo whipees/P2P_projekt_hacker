@@ -4,7 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 
-namespace P2P_projekt.Core
+namespace P2P_projekt.Config
 {
     public class ConfigData
     {
@@ -25,7 +25,6 @@ namespace P2P_projekt.Core
 
         public static void Initialize()
         {
-    
             if (!Directory.Exists(ConfigFolder))
             {
                 Directory.CreateDirectory(ConfigFolder);
@@ -52,6 +51,8 @@ namespace P2P_projekt.Core
             {
                 Settings.IpAddress = GetLocalIp();
             }
+
+
         }
 
         private static void SaveDefaultConfig()
@@ -64,13 +65,20 @@ namespace P2P_projekt.Core
 
         private static string GetLocalIp()
         {
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            foreach (var ip in host.AddressList)
+            try
             {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                    return ip.ToString();
+                using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0);
+                socket.Connect("8.8.8.8", 65530);
+                if (socket.LocalEndPoint is IPEndPoint endPoint)
+                {
+                    return endPoint.Address.ToString();
+                }
+                return "127.0.0.1";
             }
-            return "127.0.0.1";
+            catch
+            {
+                return "127.0.0.1";
+            }
         }
     }
 }
