@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using P2P_projekt.Commands;
+using P2P_projekt.Config;
 using P2P_projekt.Core;
 
 namespace P2P_projekt.Network
@@ -20,13 +21,11 @@ namespace P2P_projekt.Network
             try
             {
                 _cts = new CancellationTokenSource();
-                // Nasloucháme na všech IP adresách
                 _listener = new TcpListener(IPAddress.Any, AppConfig.Settings.Port);
                 _listener.Start();
                 BankEngine.Instance.SetStatus(true);
-                Logger.Instance.Log($"SERVER START: Naslouchám na portu {AppConfig.Settings.Port}");
+                Logger.Instance.Log($"SERVER START: Listening on port {AppConfig.Settings.Port}");
 
-                // Spustíme hlavní naslouchací smyčku
                 Task.Run(() => ListenLoop(_cts.Token));
             }
             catch (Exception ex)
@@ -42,9 +41,9 @@ namespace P2P_projekt.Network
                 _cts?.Cancel();
                 _listener?.Stop();
                 BankEngine.Instance.SetStatus(false);
-                Logger.Instance.Log("SERVER STOP: Server byl bezpečně ukončen.");
+                Logger.Instance.Log("SERVER STOP: Server shut down safely.");
             }
-            catch { /* Ignorovat chyby při vypínání */ }
+            catch { }
         }
 
         private async Task ListenLoop(CancellationToken token)
@@ -55,20 +54,17 @@ namespace P2P_projekt.Network
                 {
                     if (_listener == null) break;
 
-                    // Čekáme na klienta (PuTTY nebo jiný Node)
                     TcpClient client = await _listener.AcceptTcpClientAsync(token);
 
-                    // Každého klienta řešíme v novém vlákně - NEBLOKUJE ostatní
                     _ = Task.Run(() => HandleClient(client), token);
                 }
                 catch (OperationCanceledException)
                 {
-                    break; // Normální vypnutí
+                    break;
                 }
                 catch (Exception ex)
                 {
                     Logger.Instance.Error($"Loop Error: {ex.Message}");
-                    // Krátká pauza, aby se log nezahltil, kdyby se něco zacyklilo
                     await Task.Delay(100);
                 }
             }
@@ -76,7 +72,7 @@ namespace P2P_projekt.Network
 
         private void HandleClient(TcpClient client)
         {
-            string clientIp = "Neznámý";
+            string clientIp = "Unknown";
             try
             {
                 if (client.Client.RemoteEndPoint is IPEndPoint endPoint)
@@ -84,53 +80,47 @@ namespace P2P_projekt.Network
                     clientIp = endPoint.Address.ToString();
                 }
 
-                Logger.Instance.Log($"Připojen klient: {clientIp}");
+                Logger.Instance.Log($"Client Connected: {clientIp}");
 
                 using (client)
                 using (NetworkStream stream = client.GetStream())
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    stream.ReadTimeout = 300000; // 5 minut timeout pro neaktivitu (aby spojení drželo)
+                    stream.ReadTimeout = 300000; // 5 mins
 
-                    // HLAVNÍ SMYČKA KOMUNIKACE S JEDNÍM KLIENTEM
-                    // Čteme řádek po řádku, dokud se klient neodpojí
                     string? line;
                     while ((line = reader.ReadLine()) != null)
                     {
                         try
                         {
                             string request = line.Trim();
-                            if (string.IsNullOrWhiteSpace(request)) continue; // Ignorovat prázdné Entery
+                            if (string.IsNullOrWhiteSpace(request)) continue;
 
-                            Logger.Instance.Log($"[{clientIp}] Příkaz: {request}");
+                            Logger.Instance.Log($"[{clientIp}] CMD: {request}");
 
-                            // 1. Zpracování příkazu
                             ICommand cmd = CommandFactory.Parse(request);
                             string response = cmd.Execute();
 
-                            // 2. Odeslání odpovědi
-                            writer.WriteLine(response); // WriteLine automaticky přidá \r\n
+                            writer.WriteLine(response);
 
-                            Logger.Instance.Log($"[{clientIp}] Odpověď: {response}");
+                            Logger.Instance.Log($"[{clientIp}] RESP: {response}");
                         }
                         catch (Exception innerEx)
                         {
-                            // Pokud selže zpracování jednoho příkazu, spojení NEPADÁ
-                            writer.WriteLine($"ER Interní chyba serveru: {innerEx.Message}");
-                            Logger.Instance.Error($"Chyba zpracování příkazu: {innerEx.Message}");
+                            writer.WriteLine($"ER Internal Server Error: {innerEx.Message}");
+                            Logger.Instance.Error($"Command Processing Error: {innerEx.Message}");
                         }
                     }
                 }
             }
             catch (IOException)
             {
-                // Klient se odpojil (zavřel PuTTY) - to je normální, ne chyba
-                Logger.Instance.Log($"Klient {clientIp} se odpojil.");
+                Logger.Instance.Log($"Client {clientIp} disconnected.");
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error($"Chyba spojení s {clientIp}: {ex.Message}");
+                Logger.Instance.Error($"Connection error with {clientIp}: {ex.Message}");
             }
         }
     }

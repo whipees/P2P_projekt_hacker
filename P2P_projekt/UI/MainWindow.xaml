@@ -11,9 +11,15 @@
             </Border.Effect>
 
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="BANK NODE STATUS" Foreground="#777" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
+                <Grid>
+                    <TextBlock Text="BANK NODE STATUS" Foreground="#777" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <Button x:Name="BtnLang" Content="EN / CZ" HorizontalAlignment="Right" Width="60" Height="25" 
+                            Background="#DDD" BorderThickness="0" Click="BtnLang_Click" Cursor="Hand"/>
+                </Grid>
 
-                <TextBlock Text="● ONLINE - RUNNING" Foreground="#2E7D32" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10,0,30"/>
+                <Border x:Name="StatusBorder" Background="#E8F5E9" CornerRadius="20" Padding="15,5" Margin="0,10,0,30" HorizontalAlignment="Center">
+                    <TextBlock x:Name="TxtStatus" Text="● STARTING..." Foreground="#2E7D32" FontSize="20" FontWeight="Bold"/>
+                </Border>
 
                 <Grid Margin="0,15">
                     <Grid.ColumnDefinitions>
@@ -23,20 +29,20 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                        <TextBlock Text="Total Funds (USD)" Foreground="Gray" FontSize="18"/>
-                        <TextBlock x:Name="TxtFunds" Text="$0" FontSize="40" FontWeight="ExtraBold" Foreground="#333" Margin="0,5,0,0"/>
+                        <TextBlock x:Name="LblFunds" Text="Total Funds (USD)" Foreground="Gray" FontSize="16"/>
+                        <TextBlock x:Name="TxtFunds" Text="$0" FontSize="36" FontWeight="ExtraBold" Foreground="#333" Margin="0,5,0,0"/>
                     </StackPanel>
 
                     <Rectangle Grid.Column="1" Width="2" Fill="#EEE" Margin="20,0"/>
 
                     <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                        <TextBlock Text="Active Clients" Foreground="Gray" FontSize="18"/>
-                        <TextBlock x:Name="TxtClients" Text="0" FontSize="40" FontWeight="ExtraBold" Foreground="#333" Margin="0,5,0,0"/>
+                        <TextBlock x:Name="LblClients" Text="Active Clients" Foreground="Gray" FontSize="16"/>
+                        <TextBlock x:Name="TxtClients" Text="0" FontSize="36" FontWeight="ExtraBold" Foreground="#333" Margin="0,5,0,0"/>
                     </StackPanel>
                 </Grid>
 
                 <Border Background="#F5F5F5" CornerRadius="8" Padding="15" Margin="0,30,0,10" HorizontalAlignment="Center">
-                    <TextBlock x:Name="TxtIp" Text="IP: Detecting network..." FontSize="20" Foreground="#333" FontWeight="DemiBold"/>
+                    <TextBlock x:Name="TxtIp" Text="IP: Detecting..." FontSize="18" Foreground="#333" FontWeight="DemiBold"/>
                 </Border>
 
                 <Button x:Name="BtnStop" Content="SAFE SHUTDOWN" Background="#D32F2F" Foreground="White" 

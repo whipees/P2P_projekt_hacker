@@ -15,6 +15,8 @@ namespace P2P_projekt.Core
         private readonly List<IBankObserver> _observers = new();
         private readonly IStorage _storage;
 
+        public bool IsOnline { get; set; } = false;
+
         private BankEngine()
         {
             _storage = new StorageChain();
@@ -25,14 +27,11 @@ namespace P2P_projekt.Core
         {
             lock (_lock)
             {
-                if (!_observers.Contains(observer))
-                {
-                    _observers.Add(observer);
-                }
+                if (!_observers.Contains(observer)) _observers.Add(observer);
             }
         }
 
-        private void Notify()
+        public void Notify()
         {
             long funds;
             int clients;
@@ -41,11 +40,13 @@ namespace P2P_projekt.Core
                 funds = _accounts.Values.Sum();
                 clients = _accounts.Count;
             }
+            foreach (var observer in _observers) observer.Update(funds, clients);
+        }
 
-            foreach (var observer in _observers)
-            {
-                observer.Update(funds, clients);
-            }
+        public void SetStatus(bool online)
+        {
+            IsOnline = online;
+            Notify();
         }
 
         public int CreateAccount()
@@ -54,10 +55,7 @@ namespace P2P_projekt.Core
             {
                 var rnd = new Random();
                 int newAcc;
-                do
-                {
-                    newAcc = rnd.Next(10000, 99999);
-                } while (_accounts.ContainsKey(newAcc));
+                do { newAcc = rnd.Next(10000, 99999); } while (_accounts.ContainsKey(newAcc));
 
                 _accounts[newAcc] = 0;
                 _storage.Save(_accounts);
@@ -71,12 +69,11 @@ namespace P2P_projekt.Core
         {
             lock (_lock)
             {
-                if (!_accounts.ContainsKey(accountId)) throw new Exception("Account not found");
-                if (amount < 0) throw new Exception("Negative amount");
+                if (!_accounts.ContainsKey(accountId)) throw new Exception(Localization.Get("ErrAccount"));
+                if (amount < 0) throw new Exception(Localization.Get("ErrFormat"));
 
                 _accounts[accountId] += amount;
                 _storage.Save(_accounts);
-                Logger.Instance.Log($"Deposit {amount} to {accountId}");
                 Notify();
             }
         }
@@ -85,12 +82,11 @@ namespace P2P_projekt.Core
         {
             lock (_lock)
             {
-                if (!_accounts.ContainsKey(accountId)) throw new Exception("Account not found");
-                if (_accounts[accountId] < amount) throw new Exception("Insufficient funds");
+                if (!_accounts.ContainsKey(accountId)) throw new Exception(Localization.Get("ErrAccount"));
+                if (_accounts[accountId] < amount) throw new Exception(Localization.Get("ErrFunds"));
 
                 _accounts[accountId] -= amount;
                 _storage.Save(_accounts);
-                Logger.Instance.Log($"Withdraw {amount} from {accountId}");
                 Notify();
             }
         }
@@ -99,7 +95,7 @@ namespace P2P_projekt.Core
         {
             lock (_lock)
             {
-                if (!_accounts.ContainsKey(accountId)) throw new Exception("Account not found");
+                if (!_accounts.ContainsKey(accountId)) throw new Exception(Localization.Get("ErrAccount"));
                 return _accounts[accountId];
             }
         }
@@ -108,30 +104,16 @@ namespace P2P_projekt.Core
         {
             lock (_lock)
             {
-                if (!_accounts.ContainsKey(accountId)) throw new Exception("Account not found");
-                if (_accounts[accountId] != 0) throw new Exception("Account not empty");
+                if (!_accounts.ContainsKey(accountId)) throw new Exception(Localization.Get("ErrAccount"));
+                if (_accounts[accountId] != 0) throw new Exception(Localization.Get("ErrNotEmpty"));
 
                 _accounts.Remove(accountId);
                 _storage.Save(_accounts);
-                Logger.Instance.Log($"Account removed: {accountId}");
                 Notify();
             }
         }
 
-        public long GetTotalFunds()
-        {
-            lock (_lock)
-            {
-                return _accounts.Values.Sum();
-            }
-        }
-
-        public int GetClientCount()
-        {
-            lock (_lock)
-            {
-                return _accounts.Count;
-            }
-        }
+        public long GetTotalFunds() { lock (_lock) return _accounts.Values.Sum(); }
+        public int GetClientCount() { lock (_lock) return _accounts.Count; }
     }
 }

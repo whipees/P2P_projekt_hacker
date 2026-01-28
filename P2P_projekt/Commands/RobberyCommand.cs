@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using P2P_projekt.Config;
-using System.Windows;
 using P2P_projekt.Core;
 using P2P_projekt.Network;
 
@@ -23,22 +22,31 @@ namespace P2P_projekt.Commands
             if (!long.TryParse(parts[1], out _targetAmount)) throw new ArgumentException(Localization.Get("ErrFormat"));
         }
 
-        public async Task<string> ExecuteAsync()
+        public string Execute()
+        {
+            return ExecuteAsync().GetAwaiter().GetResult();
+        }
+
+        private async Task<string> ExecuteAsync()
         {
             var potentialTargets = GenerateIpRange();
 
-            
+            // Spustíme skenování všech IP
             var scanTasks = potentialTargets.Select(ScanNodeAsync);
             var results = await Task.WhenAll(scanTasks);
 
-           
+            // Vybereme jen ty, co se podařilo spojit
             var victims = results
                 .Where(v => v != null)
                 .OrderByDescending(v => v.Funds)
                 .ToList();
 
             if (!victims.Any())
-                return "Network poor, robbery impossible.";
+            {
+                // Pokud skenování selhalo, vypíšeme proč do logu (pro debugování)
+                Logger.Instance.Error("Robbery failed: No accessible banks found via Network Scan.");
+                return "Network poor, robbery impossible. (Check node.log for details)";
+            }
 
             return CalculateOptimalRobbery(victims);
         }
@@ -47,23 +55,32 @@ namespace P2P_projekt.Commands
         {
             try
             {
+                // OPRAVA: Použití AppConfig.Settings.Port
+                var t1 = Task.Run(() => NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BA"));
+                var t2 = Task.Run(() => NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BN"));
 
-                try
+                await Task.WhenAll(t1, t2);
+
+                string rawBa = t1.Result;
+                string rawBn = t2.Result;
+
+                // Debug logování, pokud dostaneme chybu
+                if (rawBa.StartsWith("ER") || rawBn.StartsWith("ER"))
                 {
-                    string rawBa = NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BA");
-                    string rawBn = NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BN");
+                    Logger.Instance.Error($"Scan error for {ip}: BA='{rawBa}', BN='{rawBn}'");
+                    return null;
+                }
 
-                await Task.WhenAll(taskBa, taskBn);
-
-                if (TryParseResponse(taskBa.Result, PrefixFunds, out long funds) &&
-                    TryParseResponse(taskBn.Result, PrefixClients, out long clients))
+                if (TryParseResponse(rawBa, PrefixFunds, out long funds) &&
+                    TryParseResponse(rawBn, PrefixClients, out long clients))
                 {
                     return new BankNode(ip, funds, (int)clients);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-               
+                // Zaznamenáme chybu spojení
+                Logger.Instance.Error($"Scan exception for {ip}: {ex.Message}");
             }
             return null;
         }
@@ -85,12 +102,11 @@ namespace P2P_projekt.Commands
 
             string ipList = string.Join(", ", targetIps);
 
-
             return string.Format(Localization.Get("MsgRobbery"), ipList, totalAffectedClients)
-                   + $" (Total: {currentSum} USD)";
+                   + $" (Total found: {currentSum} USD)";
         }
 
-        private bool TryParseResponse(string response, string prefix, out long value)
+        private bool TryParseResponse(string? response, string prefix, out long value)
         {
             value = 0;
             if (string.IsNullOrWhiteSpace(response) || !response.StartsWith(prefix)) return false;
@@ -101,7 +117,6 @@ namespace P2P_projekt.Commands
 
         private List<string> GenerateIpRange()
         {
-            // For classroom demo purposes, we scan localhost and a few potential peers
             return new List<string>
             {
                 "127.0.0.1",

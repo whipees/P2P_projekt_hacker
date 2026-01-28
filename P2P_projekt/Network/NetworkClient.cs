@@ -1,12 +1,8 @@
-﻿
-using P2P_projekt.Core;
+﻿using P2P_projekt.Core;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
-
+using P2P_projekt.Config;
 namespace P2P_projekt.Network
 {
     public static class NetworkClient
