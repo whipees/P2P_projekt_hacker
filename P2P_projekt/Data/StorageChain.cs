@@ -8,24 +8,33 @@ namespace P2P_projekt.Data
 {
     public class StorageChain : IStorage
     {
-        private const string JsonFile = "bank_data.json";
+        private const string PrimaryFile = "bank_data.json";
         private const string BackupFile = "bank_data.bak";
 
         public Dictionary<int, long> Load()
         {
             try
             {
-                if (File.Exists(JsonFile))
+                if (File.Exists(PrimaryFile))
+                    return LoadFromFile(PrimaryFile);
+
+                if (File.Exists(BackupFile))
                 {
-                    string json = File.ReadAllText(JsonFile);
-                    return JsonSerializer.Deserialize<Dictionary<int, long>>(json) ?? new Dictionary<int, long>();
+                    Logger.Instance.Log("Primary storage missing. Loading from Backup.");
+                    return LoadFromFile(BackupFile);
                 }
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error($"Persistence load failed: {ex.Message}");
+                Logger.Instance.Error($"Load failed: {ex.Message}");
             }
             return new Dictionary<int, long>();
+        }
+
+        private Dictionary<int, long> LoadFromFile(string path)
+        {
+            string json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<Dictionary<int, long>>(json) ?? new Dictionary<int, long>();
         }
 
         public void Save(Dictionary<int, long> accounts)
@@ -35,12 +44,12 @@ namespace P2P_projekt.Data
             try
             {
                 string json = JsonSerializer.Serialize(accounts);
-                File.WriteAllText(JsonFile, json);
+                File.WriteAllText(PrimaryFile, json);
                 saved = true;
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error($"Primary storage failed: {ex.Message}");
+                Logger.Instance.Error($"Primary Storage Failed: {ex.Message}");
             }
 
             if (!saved)
@@ -50,16 +59,17 @@ namespace P2P_projekt.Data
                     string json = JsonSerializer.Serialize(accounts);
                     File.WriteAllText(BackupFile, json);
                     saved = true;
+                    Logger.Instance.Log("Saved to Backup Storage.");
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Error($"Backup storage failed: {ex.Message}");
+                    Logger.Instance.Error($"Backup Storage Failed: {ex.Message}");
                 }
             }
 
             if (!saved)
             {
-                Logger.Instance.Error("CRITICAL: Data held in memory only.");
+                Logger.Instance.Error("CRITICAL: Storage failed. Data valid in RAM only!");
             }
         }
     }
