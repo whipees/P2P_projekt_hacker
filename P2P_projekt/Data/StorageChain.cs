@@ -7,8 +7,8 @@ using P2P_projekt.Core;
 namespace P2P_projekt.Data
 {
     /// <summary>
-    /// Implements a redundant storage mechanism that uses a primary JSON file and a backup file
-    /// to ensure data persistence for bank accounts.
+    /// Provides a robust, redundant storage mechanism for bank account data.
+    /// Implements atomic writes and backup rotation to ensure data integrity.
     /// </summary>
     public class StorageChain : IStorage
     {
@@ -16,35 +16,44 @@ namespace P2P_projekt.Data
         private const string BackupFile = "bank_data.bak";
 
         /// <summary>
-        /// Loads account data from the primary storage file. If the primary file is missing,
-        /// it attempts to load data from the backup file.
+        /// Loads account data from storage. Priority is given to the primary file; 
+        /// if corrupted or missing, it falls back to the latest backup.
         /// </summary>
-        /// <returns>A dictionary of account IDs and their balances; returns an empty dictionary if both files fail.</returns>
+        /// <returns>A dictionary containing account IDs and balances.</returns>
         public Dictionary<int, long> Load()
         {
             try
             {
                 if (File.Exists(PrimaryFile))
-                    return LoadFromFile(PrimaryFile);
+                {
+                    try
+                    {
+                        return LoadFromFile(PrimaryFile);
+                    }
+                    catch (JsonException)
+                    {
+                        Logger.Instance.Error("Primary storage file is corrupted. Attempting to load from backup.");
+                    }
+                }
 
                 if (File.Exists(BackupFile))
                 {
-                    Logger.Instance.Log("Primary storage missing. Loading from Backup.");
                     return LoadFromFile(BackupFile);
                 }
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error($"Load failed: {ex.Message}");
+                Logger.Instance.Error($"Critical failure during data load: {ex.Message}");
             }
+
             return new Dictionary<int, long>();
         }
 
         /// <summary>
-        /// Reads and deserializes JSON data from a specific file path.
+        /// Reads and deserializes JSON data from the specified file path.
         /// </summary>
-        /// <param name="path">The file path to read from.</param>
-        /// <returns>A deserialized dictionary of account data.</returns>
+        /// <param name="path">The file path to read.</param>
+        /// <returns>The deserialized account dictionary.</returns>
         private Dictionary<int, long> LoadFromFile(string path)
         {
             string json = File.ReadAllText(path);
@@ -52,43 +61,37 @@ namespace P2P_projekt.Data
         }
 
         /// <summary>
-        /// Persists account data to the primary storage file. If the primary storage fails,
-        /// it attempts to save the data to the backup file.
+        /// Saves account data using an atomic write pattern. 
+        /// Existing primary data is rotated to a backup before the new state is committed.
         /// </summary>
-        /// <param name="accounts">The dictionary of accounts and balances to be saved.</param>
+        /// <param name="accounts">The dictionary of accounts to persist.</param>
         public void Save(Dictionary<int, long> accounts)
         {
-            bool saved = false;
-
             try
             {
-                string json = JsonSerializer.Serialize(accounts);
-                File.WriteAllText(PrimaryFile, json);
-                saved = true;
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(accounts, options);
+
+                if (File.Exists(PrimaryFile))
+                {
+                    File.Copy(PrimaryFile, BackupFile, true);
+                }
+
+                string tempFile = PrimaryFile + ".tmp";
+                File.WriteAllText(tempFile, json);
+
+                if (File.Exists(PrimaryFile))
+                {
+                    File.Delete(PrimaryFile);
+                }
+
+                File.Move(tempFile, PrimaryFile);
+
+                Logger.Instance.Log("Data successfully persisted and backup rotated.");
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error($"Primary Storage Failed: {ex.Message}");
-            }
-
-            if (!saved)
-            {
-                try
-                {
-                    string json = JsonSerializer.Serialize(accounts);
-                    File.WriteAllText(BackupFile, json);
-                    saved = true;
-                    Logger.Instance.Log("Saved to Backup Storage.");
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.Error($"Backup Storage Failed: {ex.Message}");
-                }
-            }
-
-            if (!saved)
-            {
-                Logger.Instance.Error("CRITICAL: Storage failed. Data valid in RAM only!");
+                Logger.Instance.Error($"CRITICAL STORAGE ERROR: {ex.Message}");
             }
         }
     }
