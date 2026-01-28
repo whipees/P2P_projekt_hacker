@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using P2P_projekt.Config;
+using System.Windows;
 using P2P_projekt.Core;
 using P2P_projekt.Network;
 
@@ -9,63 +12,90 @@ namespace P2P_projekt.Commands
     public class RobberyCommand : ICommand
     {
         private readonly long _targetAmount;
+        private const string PrefixFunds = "BA";
+        private const string PrefixClients = "BN";
+
+        public record BankNode(string Ip, long Funds, int Clients);
 
         public RobberyCommand(string[] parts)
         {
-            if (parts.Length < 2) throw new ArgumentException("Missing target amount");
-            if (!long.TryParse(parts[1], out _targetAmount)) throw new ArgumentException("Invalid amount format");
+            if (parts.Length < 2) throw new ArgumentException(Localization.Get("ErrFormat"));
+            if (!long.TryParse(parts[1], out _targetAmount)) throw new ArgumentException(Localization.Get("ErrFormat"));
         }
 
-        public string Execute()
+        public async Task<string> ExecuteAsync()
         {
             var potentialTargets = GenerateIpRange();
-            var victims = new List<(string Ip, long Funds, int Clients)>();
 
-            foreach (var ip in potentialTargets)
+            
+            var scanTasks = potentialTargets.Select(ScanNodeAsync);
+            var results = await Task.WhenAll(scanTasks);
+
+           
+            var victims = results
+                .Where(v => v != null)
+                .OrderByDescending(v => v.Funds)
+                .ToList();
+
+            if (!victims.Any())
+                return "Network poor, robbery impossible.";
+
+            return CalculateOptimalRobbery(victims);
+        }
+
+        private async Task<BankNode?> ScanNodeAsync(string ip)
+        {
+            try
             {
+
                 try
                 {
                     string rawBa = NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BA");
                     string rawBn = NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BN");
 
-                    if (ParseResponse(rawBa, "BA", out long funds) && ParseResponse(rawBn, "BN", out long clients))
-                    {
-                        victims.Add((ip, funds, (int)clients));
-                    }
-                }
-                catch
+                await Task.WhenAll(taskBa, taskBn);
+
+                if (TryParseResponse(taskBa.Result, PrefixFunds, out long funds) &&
+                    TryParseResponse(taskBn.Result, PrefixClients, out long clients))
                 {
-                    // Node unreachable, skip
+                    return new BankNode(ip, funds, (int)clients);
                 }
             }
+            catch
+            {
+               
+            }
+            return null;
+        }
 
-            var sortedVictims = victims.OrderByDescending(v => v.Funds).ToList();
-
+        private string CalculateOptimalRobbery(List<BankNode> victims)
+        {
             long currentSum = 0;
             int totalAffectedClients = 0;
             var targetIps = new List<string>();
 
-            foreach (var victim in sortedVictims)
+            foreach (var victim in victims)
             {
-                if (currentSum >= _targetAmount) break;
-
+                targetIps.Add(victim.Ip);
                 currentSum += victim.Funds;
                 totalAffectedClients += victim.Clients;
-                targetIps.Add(victim.Ip);
+
+                if (currentSum >= _targetAmount) break;
             }
 
-            if (currentSum == 0) return "RP Network poor, robbery impossible.";
-
             string ipList = string.Join(", ", targetIps);
-            return $"RP To reach {_targetAmount} (found {currentSum}), rob banks: {ipList}. Total victims: {totalAffectedClients}.";
+
+
+            return string.Format(Localization.Get("MsgRobbery"), ipList, totalAffectedClients)
+                   + $" (Total: {currentSum} USD)";
         }
 
-        private bool ParseResponse(string response, string prefix, out long value)
+        private bool TryParseResponse(string response, string prefix, out long value)
         {
             value = 0;
-            if (string.IsNullOrEmpty(response) || !response.StartsWith(prefix)) return false;
+            if (string.IsNullOrWhiteSpace(response) || !response.StartsWith(prefix)) return false;
 
-            var parts = response.Split(' ');
+            var parts = response.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             return parts.Length > 1 && long.TryParse(parts[1], out value);
         }
 
