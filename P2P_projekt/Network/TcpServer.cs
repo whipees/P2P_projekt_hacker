@@ -20,13 +20,11 @@ namespace P2P_projekt.Network
             try
             {
                 _cts = new CancellationTokenSource();
-                // Nasloucháme na všech IP adresách
                 _listener = new TcpListener(IPAddress.Any, AppConfig.Settings.Port);
                 _listener.Start();
                 BankEngine.Instance.SetStatus(true);
                 Logger.Instance.Log($"SERVER START: Naslouchám na portu {AppConfig.Settings.Port}");
 
-                // Spustíme hlavní naslouchací smyčku
                 Task.Run(() => ListenLoop(_cts.Token));
             }
             catch (Exception ex)
@@ -44,7 +42,7 @@ namespace P2P_projekt.Network
                 BankEngine.Instance.SetStatus(false);
                 Logger.Instance.Log("SERVER STOP: Server byl bezpečně ukončen.");
             }
-            catch { /* Ignorovat chyby při vypínání */ }
+            catch {  }
         }
 
         private async Task ListenLoop(CancellationToken token)
@@ -55,20 +53,17 @@ namespace P2P_projekt.Network
                 {
                     if (_listener == null) break;
 
-                    // Čekáme na klienta (PuTTY nebo jiný Node)
                     TcpClient client = await _listener.AcceptTcpClientAsync(token);
 
-                    // Každého klienta řešíme v novém vlákně - NEBLOKUJE ostatní
                     _ = Task.Run(() => HandleClient(client), token);
                 }
                 catch (OperationCanceledException)
                 {
-                    break; // Normální vypnutí
+                    break; 
                 }
                 catch (Exception ex)
                 {
                     Logger.Instance.Error($"Loop Error: {ex.Message}");
-                    // Krátká pauza, aby se log nezahltil, kdyby se něco zacyklilo
                     await Task.Delay(100);
                 }
             }
@@ -91,32 +86,28 @@ namespace P2P_projekt.Network
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    stream.ReadTimeout = 300000; // 5 minut timeout pro neaktivitu (aby spojení drželo)
+                    stream.ReadTimeout = 300000; 
 
-                    // HLAVNÍ SMYČKA KOMUNIKACE S JEDNÍM KLIENTEM
-                    // Čteme řádek po řádku, dokud se klient neodpojí
+
                     string? line;
                     while ((line = reader.ReadLine()) != null)
                     {
                         try
                         {
                             string request = line.Trim();
-                            if (string.IsNullOrWhiteSpace(request)) continue; // Ignorovat prázdné Entery
+                            if (string.IsNullOrWhiteSpace(request)) continue; 
 
                             Logger.Instance.Log($"[{clientIp}] Příkaz: {request}");
 
-                            // 1. Zpracování příkazu
                             ICommand cmd = CommandFactory.Parse(request);
                             string response = cmd.Execute();
 
-                            // 2. Odeslání odpovědi
-                            writer.WriteLine(response); // WriteLine automaticky přidá \r\n
+                            writer.WriteLine(response); 
 
                             Logger.Instance.Log($"[{clientIp}] Odpověď: {response}");
                         }
                         catch (Exception innerEx)
                         {
-                            // Pokud selže zpracování jednoho příkazu, spojení NEPADÁ
                             writer.WriteLine($"ER Interní chyba serveru: {innerEx.Message}");
                             Logger.Instance.Error($"Chyba zpracování příkazu: {innerEx.Message}");
                         }
@@ -125,7 +116,6 @@ namespace P2P_projekt.Network
             }
             catch (IOException)
             {
-                // Klient se odpojil (zavřel PuTTY) - to je normální, ne chyba
                 Logger.Instance.Log($"Klient {clientIp} se odpojil.");
             }
             catch (Exception ex)
