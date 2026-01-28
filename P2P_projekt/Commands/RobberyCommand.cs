@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using P2P_projekt.Core;
 using P2P_projekt.Network;
-using P2P_projekt.Config;
 
 namespace P2P_projekt.Commands
 {
@@ -26,8 +25,8 @@ namespace P2P_projekt.Commands
             {
                 try
                 {
-                    string rawBa = NetworkClient.SendRequest(ip, AppConfig.Port, "BA");
-                    string rawBn = NetworkClient.SendRequest(ip, AppConfig.Port, "BN");
+                    string rawBa = NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BA");
+                    string rawBn = NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BN");
 
                     if (ParseResponse(rawBa, "BA", out long funds) && ParseResponse(rawBn, "BN", out long clients))
                     {
@@ -76,7 +75,7 @@ namespace P2P_projekt.Commands
             return new List<string>
             {
                 "127.0.0.1",
-                AppConfig.IpAddress
+                AppConfig.Settings.IpAddress
             };
         }
     }

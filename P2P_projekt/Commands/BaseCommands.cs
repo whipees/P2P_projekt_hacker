@@ -2,14 +2,13 @@
 
 namespace P2P_projekt.Commands
 {
-    using P2P_projekt.Config;
     using P2P_projekt.Network;
     using P2P_projekt.Core;
     using System;
 
         public class BankCodeCommand : ICommand
         {
-            public string Execute() => $"BC {AppConfig.IpAddress}";
+            public string Execute() => $"BC {AppConfig.Settings.IpAddress}";
         }
 
         public class AccountCreateCommand : ICommand
@@ -20,7 +19,7 @@ namespace P2P_projekt.Commands
                 {
                     // Calls Person B's code
                     int acc = BankEngine.Instance.CreateAccount();
-                    return $"AC {acc}/{AppConfig.IpAddress}";
+                    return $"AC {acc}/{AppConfig.Settings.IpAddress}";
                 }
                 catch (Exception ex)
                 {
@@ -120,7 +119,7 @@ namespace P2P_projekt.Commands
 
             public string Execute()
             {
-                return NetworkClient.SendRequest(_targetIp, AppConfig.Port, _fullCommand);
+                return NetworkClient.SendRequest(_targetIp, AppConfig.Settings.Port, _fullCommand);
             }
         }
 

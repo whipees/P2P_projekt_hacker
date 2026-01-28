@@ -1,4 +1,4 @@
-﻿using P2P_projekt.Config;
+﻿
 using P2P_projekt.Core;
 using System;
 using System.Collections.Generic;
@@ -58,7 +58,7 @@ namespace P2P_projekt.Commands
             string ip = target[1];
 
             // Proxy Logic
-            if (ip != AppConfig.IpAddress && ip != "127.0.0.1" && ip != "0.0.0.0")
+            if (ip != AppConfig.Settings.IpAddress && ip != "127.0.0.1" && ip != "0.0.0.0")
             {
                 return new ProxyCommand(ip, fullCmd);
             }
