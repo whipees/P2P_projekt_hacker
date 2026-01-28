@@ -11,11 +11,19 @@ using P2P_projekt.Core;
 
 namespace P2P_projekt.Network
 {
+    /// <summary>
+    /// Represents a multi-threaded TCP server that listens for incoming P2P bank commands 
+    /// and dispatches them to the command factory for execution.
+    /// </summary>
     public class TcpServer
     {
         private TcpListener? _listener;
         private CancellationTokenSource? _cts;
 
+        /// <summary>
+        /// Initializes and starts the TCP listener on the configured port.
+        /// Updates the bank engine status and begins the asynchronous listening loop.
+        /// </summary>
         public void Start()
         {
             try
@@ -34,6 +42,10 @@ namespace P2P_projekt.Network
             }
         }
 
+        /// <summary>
+        /// Gracefully stops the TCP server, cancels pending operations, 
+        /// and updates the bank engine status to offline.
+        /// </summary>
         public void Stop()
         {
             try
@@ -46,6 +58,12 @@ namespace P2P_projekt.Network
             catch { }
         }
 
+        /// <summary>
+        /// Asynchronous loop that continuously accepts incoming TCP client connections
+        /// until a cancellation is requested.
+        /// </summary>
+        /// <param name="token">Cancellation token to stop the loop.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         private async Task ListenLoop(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -70,6 +88,12 @@ namespace P2P_projekt.Network
             }
         }
 
+        /// <summary>
+        /// Handles communication with a connected TCP client. 
+        /// Reads incoming command lines, processes them via <see cref="CommandFactory"/>, 
+        /// and sends back the resulting response.
+        /// </summary>
+        /// <param name="client">The connected <see cref="TcpClient"/> instance.</param>
         private void HandleClient(TcpClient client)
         {
             string clientIp = "Unknown";
@@ -87,7 +111,7 @@ namespace P2P_projekt.Network
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 {
-                    stream.ReadTimeout = 300000; // 5 mins
+                    stream.ReadTimeout = 300000;
 
                     string? line;
                     while ((line = reader.ReadLine()) != null)

@@ -2,8 +2,14 @@
 
 namespace P2P_projekt.Core
 {
+    /// <summary>
+    /// Provides static localization services for the application, supporting multiple languages.
+    /// </summary>
     public static class Localization
     {
+        /// <summary>
+        /// Gets or sets the current language code (e.g., "EN", "CZ").
+        /// </summary>
         public static string CurrentLanguage { get; set; } = "EN";
 
         private static readonly Dictionary<string, Dictionary<string, string>> _dictionary = new()
@@ -42,6 +48,11 @@ namespace P2P_projekt.Core
             }
         };
 
+        /// <summary>
+        /// Retrieves a localized string based on the specified key and the <see cref="CurrentLanguage"/>.
+        /// </summary>
+        /// <param name="key">The unique identifier for the localized string.</param>
+        /// <returns>The localized string if found; otherwise, the key itself.</returns>
         public static string Get(string key)
         {
             if (_dictionary.ContainsKey(CurrentLanguage) && _dictionary[CurrentLanguage].ContainsKey(key))
@@ -51,6 +62,9 @@ namespace P2P_projekt.Core
             return key;
         }
 
+        /// <summary>
+        /// Toggles the <see cref="CurrentLanguage"/> between English ("EN") and Czech ("CZ").
+        /// </summary>
         public static void ToggleLanguage()
         {
             CurrentLanguage = (CurrentLanguage == "EN") ? "CZ" : "EN";

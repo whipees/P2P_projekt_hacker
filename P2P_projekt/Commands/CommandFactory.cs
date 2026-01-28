@@ -4,8 +4,16 @@ using P2P_projekt.Config;
 
 namespace P2P_projekt.Commands
 {
+    /// <summary>
+    /// Factory class responsible for parsing raw string input and creating the appropriate command objects.
+    /// </summary>
     public static class CommandFactory
     {
+        /// <summary>
+        /// Parses a raw string input into a specific <see cref="ICommand"/> implementation.
+        /// </summary>
+        /// <param name="input">The raw command string received from a client or user.</param>
+        /// <returns>A concrete instance of <see cref="ICommand"/> based on the command code.</returns>
         public static ICommand Parse(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -40,6 +48,14 @@ namespace P2P_projekt.Commands
             }
         }
 
+        /// <summary>
+        /// Handles the parsing and creation of transaction-related commands, including routing to proxy if necessary.
+        /// </summary>
+        /// <param name="code">The command operation code (e.g., AD, AW, AB, AR).</param>
+        /// <param name="parts">The split parts of the original command string.</param>
+        /// <param name="fullCmd">The full original command string used for proxy forwarding.</param>
+        /// <returns>A command instance for local execution or a <see cref="ProxyCommand"/> for remote execution.</returns>
+        /// <exception cref="ArgumentException">Thrown when the input format is invalid.</exception>
         private static ICommand HandleTransaction(string code, string[] parts, string fullCmd)
         {
             if (parts.Length < 2) throw new ArgumentException(Localization.Get("ErrFormat"));

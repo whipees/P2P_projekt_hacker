@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic; 
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -7,16 +7,40 @@ using System.Text.Json;
 
 namespace P2P_projekt.Config
 {
+    /// <summary>
+    /// Represents the data structure for application configuration settings.
+    /// </summary>
     public class ConfigData
     {
+        /// <summary>
+        /// Gets or sets the IP address. Use "auto" to automatically detect the local IP.
+        /// </summary>
         public string IpAddress { get; set; } = "auto";
+
+        /// <summary>
+        /// Gets or sets the communication port.
+        /// </summary>
         public int Port { get; set; } = 65530;
+
+        /// <summary>
+        /// Gets or sets the network timeout in milliseconds.
+        /// </summary>
         public int Timeout { get; set; } = 5000;
+
+        /// <summary>
+        /// Gets or sets the application language code (e.g., "EN", "CZ").
+        /// </summary>
         public string Language { get; set; } = "EN";
 
+        /// <summary>
+        /// Gets or sets the list of target IP addresses for network scanning or robbery operations.
+        /// </summary>
         public List<string> TargetIps { get; set; } = new List<string>();
     }
 
+    /// <summary>
+    /// Static manager providing access to application configuration and handling file I/O for settings.
+    /// </summary>
     public static class AppConfig
     {
         private static readonly string ConfigFolder = "Config";
@@ -24,8 +48,14 @@ namespace P2P_projekt.Config
 
         private static readonly string ConfigPath = Path.Combine(ConfigFolder, ConfigFileName);
 
+        /// <summary>
+        /// Gets the current application settings.
+        /// </summary>
         public static ConfigData Settings { get; private set; } = new();
 
+        /// <summary>
+        /// Initializes the configuration by loading it from a file or creating a default one if it doesn't exist.
+        /// </summary>
         public static void Initialize()
         {
             if (!Directory.Exists(ConfigFolder))
@@ -54,10 +84,11 @@ namespace P2P_projekt.Config
             {
                 Settings.IpAddress = GetLocalIp();
             }
-
-
         }
 
+        /// <summary>
+        /// Generates and saves a default configuration file.
+        /// </summary>
         private static void SaveDefaultConfig()
         {
             Settings = new ConfigData();
@@ -66,6 +97,10 @@ namespace P2P_projekt.Config
             File.WriteAllText(ConfigPath, json);
         }
 
+        /// <summary>
+        /// Attempts to determine the local machine's IP address by connecting to an external endpoint.
+        /// </summary>
+        /// <returns>The local IP address as a string, or "127.0.0.1" if detection fails.</returns>
         private static string GetLocalIp()
         {
             try

@@ -7,8 +7,21 @@ using System.Text;
 
 namespace P2P_projekt.Network
 {
+    /// <summary>
+    /// Provides static methods for handling synchronous network requests over TCP.
+    /// </summary>
     public static class NetworkClient
     {
+        /// <summary>
+        /// Sends a string command to a remote TCP server and waits for a single-line response.
+        /// </summary>
+        /// <param name="ip">The destination IP address.</param>
+        /// <param name="port">The destination TCP port.</param>
+        /// <param name="command">The raw command string to send.</param>
+        /// <returns>
+        /// The trimmed response string from the server if successful; 
+        /// otherwise, an error message prefixed with "ER".
+        /// </returns>
         public static string SendRequest(string ip, int port, string command)
         {
             try
