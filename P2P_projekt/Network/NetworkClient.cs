@@ -1,4 +1,5 @@
-﻿using P2P_projekt.Config;
+﻿
+using P2P_projekt.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,14 +16,14 @@ namespace P2P_projekt.Network
             try
             {
                 using TcpClient client = new TcpClient();
-                if (!client.ConnectAsync(ip, port).Wait(AppConfig.Timeout))
+                if (!client.ConnectAsync(ip, port).Wait(AppConfig.Settings.Timeout))
                 {
                     return "ER Connection timed out";
                 }
 
                 using NetworkStream stream = client.GetStream();
-                stream.ReadTimeout = AppConfig.Timeout;
-                stream.WriteTimeout = AppConfig.Timeout;
+                stream.ReadTimeout = AppConfig.Settings.Timeout;
+                stream.WriteTimeout = AppConfig.Settings.Timeout;
 
                 byte[] data = Encoding.UTF8.GetBytes(command + "\n");
                 stream.Write(data, 0, data.Length);
