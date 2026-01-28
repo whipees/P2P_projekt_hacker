@@ -1,6 +1,7 @@
 {
-    "IpAddress": "auto",
-    "Port": 65530,
-    "Timeout": 5000,
-    "Language": "CZ"
+  "IpAddress": "auto",
+  "Port": 65530,
+  "Timeout": 5000,
+  "Language": "CZ",
+  "TargetIps": [ ]
 }

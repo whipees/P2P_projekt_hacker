@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic; 
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -12,6 +13,8 @@ namespace P2P_projekt.Config
         public int Port { get; set; } = 65530;
         public int Timeout { get; set; } = 5000;
         public string Language { get; set; } = "EN";
+
+        public List<string> TargetIps { get; set; } = new List<string>();
     }
 
     public static class AppConfig
