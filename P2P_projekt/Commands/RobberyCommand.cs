@@ -47,9 +47,11 @@ namespace P2P_projekt.Commands
         {
             try
             {
-                
-                var taskBa = Task.Run(() => NetworkClient.SendRequest(ip, AppConfig.Settings.Port, PrefixFunds));
-                var taskBn = Task.Run(() => NetworkClient.SendRequest(ip, AppConfig.Settings.Port, PrefixClients));
+
+                try
+                {
+                    string rawBa = NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BA");
+                    string rawBn = NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BN");
 
                 await Task.WhenAll(taskBa, taskBn);
 
@@ -97,9 +99,14 @@ namespace P2P_projekt.Commands
             return parts.Length > 1 && long.TryParse(parts[1], out value);
         }
 
-        private IEnumerable<string> GenerateIpRange() => new[] { "127.0.0.1", AppConfig.Settings.IpAddress };
-
-       
-        public string Execute() => ExecuteAsync().GetAwaiter().GetResult();
+        private List<string> GenerateIpRange()
+        {
+            // For classroom demo purposes, we scan localhost and a few potential peers
+            return new List<string>
+            {
+                "127.0.0.1",
+                AppConfig.Settings.IpAddress
+            };
+        }
     }
 }

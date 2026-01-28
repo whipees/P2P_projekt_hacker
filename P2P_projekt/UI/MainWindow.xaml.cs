@@ -2,7 +2,6 @@
 using System.Windows;
 using P2P_projekt.Core;
 using P2P_projekt.Network;
-using P2P_projekt.Config;
 
 namespace P2P_projekt
 {
@@ -16,7 +15,7 @@ namespace P2P_projekt
 
             try
             {
-                TxtIp.Text = $"IP: {AppConfig.IpAddress} | Port: {AppConfig.Port}";
+                TxtIp.Text = $"IP: {AppConfig.Settings.IpAddress} | Port: {AppConfig.Settings.Port}";
 
                 BankEngine.Instance.Attach(this);
                 Update(BankEngine.Instance.GetTotalFunds(), BankEngine.Instance.GetClientCount());

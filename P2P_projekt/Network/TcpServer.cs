@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using P2P_projekt.Commands;
-using P2P_projekt.Config;
 using P2P_projekt.Core;
 
 namespace P2P_projekt.Network
@@ -22,10 +21,10 @@ namespace P2P_projekt.Network
             {
                 _cts = new CancellationTokenSource();
                 // Nasloucháme na všech IP adresách
-                _listener = new TcpListener(IPAddress.Any, AppConfig.Port);
+                _listener = new TcpListener(IPAddress.Any, AppConfig.Settings.Port);
                 _listener.Start();
                 BankEngine.Instance.SetStatus(true);
-                Logger.Instance.Log($"SERVER START: Naslouchám na portu {AppConfig.Port}");
+                Logger.Instance.Log($"SERVER START: Naslouchám na portu {AppConfig.Settings.Port}");
 
                 // Spustíme hlavní naslouchací smyčku
                 Task.Run(() => ListenLoop(_cts.Token));
