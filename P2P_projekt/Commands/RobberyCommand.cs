@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using P2P_projekt.Config;
+using P2P_projekt.Config; 
 using P2P_projekt.Core;
 using P2P_projekt.Network;
 
@@ -14,7 +14,10 @@ namespace P2P_projekt.Commands
         private const string PrefixFunds = "BA";
         private const string PrefixClients = "BN";
 
-        public record BankNode(string Ip, long Funds, int Clients);
+        public record BankNode(string Ip, long Funds, int Clients)
+        {
+            public double Efficiency => (double)Funds / (Clients == 0 ? 1 : Clients);
+        }
 
         public RobberyCommand(string[] parts)
         {
@@ -31,21 +34,19 @@ namespace P2P_projekt.Commands
         {
             var potentialTargets = GenerateIpRange();
 
-            // Spustíme skenování všech IP
             var scanTasks = potentialTargets.Select(ScanNodeAsync);
             var results = await Task.WhenAll(scanTasks);
 
-            // Vybereme jen ty, co se podařilo spojit
             var victims = results
-                .Where(v => v != null)
-                .OrderByDescending(v => v.Funds)
+                .Where(v => v != null && v.Funds > 0)
+                .OrderByDescending(v => v.Efficiency)
+                .ThenByDescending(v => v.Funds)
                 .ToList();
 
             if (!victims.Any())
             {
-                // Pokud skenování selhalo, vypíšeme proč do logu (pro debugování)
-                Logger.Instance.Error("Robbery failed: No accessible banks found via Network Scan.");
-                return "Network poor, robbery impossible. (Check node.log for details)";
+                Logger.Instance.Log($"Robbery scan finished. Scanned {potentialTargets.Count} IPs, found 0 valid victims.");
+                return "RP Network poor, robbery impossible.";
             }
 
             return CalculateOptimalRobbery(victims);
@@ -55,7 +56,6 @@ namespace P2P_projekt.Commands
         {
             try
             {
-                // OPRAVA: Použití AppConfig.Settings.Port
                 var t1 = Task.Run(() => NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BA"));
                 var t2 = Task.Run(() => NetworkClient.SendRequest(ip, AppConfig.Settings.Port, "BN"));
 
@@ -64,12 +64,7 @@ namespace P2P_projekt.Commands
                 string rawBa = t1.Result;
                 string rawBn = t2.Result;
 
-                // Debug logování, pokud dostaneme chybu
-                if (rawBa.StartsWith("ER") || rawBn.StartsWith("ER"))
-                {
-                    Logger.Instance.Error($"Scan error for {ip}: BA='{rawBa}', BN='{rawBn}'");
-                    return null;
-                }
+                if (rawBa.StartsWith("ER") || rawBn.StartsWith("ER")) return null;
 
                 if (TryParseResponse(rawBa, PrefixFunds, out long funds) &&
                     TryParseResponse(rawBn, PrefixClients, out long clients))
@@ -77,10 +72,8 @@ namespace P2P_projekt.Commands
                     return new BankNode(ip, funds, (int)clients);
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                // Zaznamenáme chybu spojení
-                Logger.Instance.Error($"Scan exception for {ip}: {ex.Message}");
             }
             return null;
         }
@@ -100,7 +93,7 @@ namespace P2P_projekt.Commands
                 if (currentSum >= _targetAmount) break;
             }
 
-            string ipList = string.Join(", ", targetIps);
+            string ipList = string.Join(" a ", targetIps);
 
             return string.Format(Localization.Get("MsgRobbery"), ipList, totalAffectedClients)
                    + $" (Total found: {currentSum} USD)";
@@ -117,11 +110,47 @@ namespace P2P_projekt.Commands
 
         private List<string> GenerateIpRange()
         {
-            return new List<string>
+            var ips = new List<string> { "127.0.0.1" };
+
+            if (!ips.Contains(AppConfig.Settings.IpAddress))
+                ips.Add(AppConfig.Settings.IpAddress);
+
+            bool customTargetsFound = false;
+
+            if (AppConfig.Settings.TargetIps != null && AppConfig.Settings.TargetIps.Count > 0)
             {
-                "127.0.0.1",
-                AppConfig.Settings.IpAddress
-            };
+                foreach (var ip in AppConfig.Settings.TargetIps)
+                {
+                    if (!string.IsNullOrWhiteSpace(ip) && !ips.Contains(ip))
+                    {
+                        ips.Add(ip.Trim());
+                        customTargetsFound = true;
+                    }
+                }
+            }
+
+            if (!customTargetsFound)
+            {
+                string localIp = AppConfig.Settings.IpAddress;
+                int lastDot = localIp.LastIndexOf('.');
+
+                if (lastDot > 0)
+                {
+                    string prefix = localIp.Substring(0, lastDot + 1);
+                    Logger.Instance.Log($"Config empty. Auto-scanning subnet: {prefix}1 - {prefix}254");
+
+                    for (int i = 1; i < 255; i++)
+                    {
+                        string target = prefix + i;
+                        if (!ips.Contains(target))
+                        {
+                            ips.Add(target);
+                        }
+                    }
+                }
+            }
+
+            return ips;
         }
     }
 }
